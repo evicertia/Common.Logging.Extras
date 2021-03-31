@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net45;net46</TargetFrameworks>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Evidencias Certificadas, S.L.</Authors>
+    <Company>Evidencias Certificadas, S.L.</Company>
+    <Copyright>Copyright Evidencias Certificadas, S.L. 2010-2021</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/evicertia/Common.Logging.Extras</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Common.Logging" Version="3.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common.Logging.NLog45\Common.Logging.NLog45.csproj" />
+  </ItemGroup>
+
+</Project>
