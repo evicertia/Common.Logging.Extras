@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Collections.Generic;
 
-using Common.Logging.NLog45;
 using Common.Logging.Scopes;
 
 namespace Common.Logging
@@ -80,15 +79,6 @@ namespace Common.Logging
 				customStack = new CustomStack<ThreadLoggingScope>(Thread.CurrentThread.ManagedThreadId);
 				context.Set(STACK_KEY, customStack);
 			}
-			else if (!NLogLogger.FavorLogicalVariableContexts) //< XXX: Actually, we only support NLog.
-			{
-				// If asynchronous contexts not enabled, we ensure scopes belong to one thread.
-				Guard.Against<InvalidOperationException>(
-					Thread.CurrentThread.ManagedThreadId != customStack.OwnerThreadId,
-					"Trying to nest a new thread logging scope from within a different thread ({0} vs {1})?!",
-					Thread.CurrentThread.ManagedThreadId, customStack.OwnerThreadId
-				);
-			}
 
 			@this.NestedThreadVariablesContext.Push(description);
 
@@ -108,16 +98,6 @@ namespace Common.Logging
 				var stack2 = @this2.ThreadVariablesContext.Get(STACK_KEY) as CustomStack<ThreadLoggingScope>;
 
 				Guard.IsNotNull(stack2, nameof(CustomStack<ThreadLoggingScope>));
-
-				if (!NLogLogger.FavorLogicalVariableContexts) //< XXX: Actually, we only support NLog.
-				{
-					// If asynchronous contexts not enabled, we ensure scopes belong to one thread.
-					Guard.Against<InvalidOperationException>(
-						Thread.CurrentThread.ManagedThreadId != customStack.OwnerThreadId,
-						"Trying to nest a new thread logging scope from within a different thread ({0} vs {1})?!",
-						Thread.CurrentThread.ManagedThreadId, customStack.OwnerThreadId
-					);
-				}
 
 				stack2.Collection.Pop().Dispose();
 				@this2.NestedThreadVariablesContext.Pop();
