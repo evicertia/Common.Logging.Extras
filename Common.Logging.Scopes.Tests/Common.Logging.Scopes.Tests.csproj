@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net45</TargetFramework>
+    <Company>Evicertia S.L.</Company>
+    <IsPackable>false</IsPackable>
+    <AssemblyVersion>0.0.0.0</AssemblyVersion>
+    <FileVersion>0.0.0.0</FileVersion>
+    <Version>0.0.0.0</Version>
+    <Authors>Evicertia</Authors>
+    <Copyright>Copyright Evicertia, S.L. 2010-2021</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/evicertia/Common.Logging.Extras</PackageProjectUrl>
+    <PackageId>Common.Logging.Scopes.Tests</PackageId>
+    <RootNamespace>Common.Logging.Scopes</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Common.Logging" Version="3.4.1" />
+    <PackageReference Include="NLog" Version="4.7.10" />
+    <PackageReference Include="NUnit" Version="3.13.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common.Logging.NLog45\Common.Logging.NLog45.csproj" />
+    <ProjectReference Include="..\Common.Logging.Scopes\Common.Logging.Scopes.csproj" />
+  </ItemGroup>
+
+</Project>
