@@ -1,12 +1,11 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
+﻿using System.Threading;
+using System.Reflection;
 using System.Threading.Tasks;
 
 using NUnit.Framework;
 
 using Common.Logging.NLog45;
-using Common.Logging.Factory;
+using Common.Logging.Configuration;
 
 namespace Common.Logging.Scopes
 {
@@ -18,7 +17,7 @@ namespace Common.Logging.Scopes
 
 		private readonly bool _useLogicalContexts;
 
-		private DummyNLog _log;
+		private static ILog _log;
 
 		#endregion
 
@@ -31,79 +30,40 @@ namespace Common.Logging.Scopes
 
 		#endregion
 
-		#region Inner Classes
+		#region Private methods
 
-		// XXX: Abstract logger which uses the NLog45 contexts..
-		private class DummyNLog : AbstractLogger
+		private static string PeekFromNestedContext(ILog log)
 		{
-			#region AbstractLogger members..
+			// XXX: Due stack is not exposed, pop/push the last item added to do assertions on tests..
+			var str = log.NestedThreadVariablesContext.Pop();
+			log.NestedThreadVariablesContext.Push(str);
 
-			public override bool IsTraceEnabled => false;
-
-			public override bool IsDebugEnabled => false;
-
-			public override bool IsInfoEnabled => false;
-
-			public override bool IsWarnEnabled => false;
-
-			public override bool IsErrorEnabled => false;
-
-			public override bool IsFatalEnabled => false;
-
-			protected override void WriteInternal(LogLevel level, object message, Exception exception)
-			{
-				// Do nothing..
-			}
-
-			#endregion
-
-			#region Fields & Properties
-
-			private readonly bool _useLogicalContexts;
-
-			private readonly IVariablesContext _threadVariablesContext = new NLogThreadVariablesContext();
-			private readonly IVariablesContext _logicalThreadVariablesContext = new NLogLogicalThreadVariablesContext();
-
-			private readonly INestedVariablesContext _nestedVariablesContext = new NLogNestedThreadVariablesContext();
-			private readonly INestedVariablesContext _logicalNestedVariablesContext = new NLogNestedLogicalThreadVariablesContext();
-
-			public override IVariablesContext ThreadVariablesContext => _useLogicalContexts ? _logicalThreadVariablesContext : _threadVariablesContext;
-			public override INestedVariablesContext NestedThreadVariablesContext => _useLogicalContexts ? _logicalNestedVariablesContext : _nestedVariablesContext;
-
-			#endregion
-
-			#region .ctors
-
-			public DummyNLog(bool useLogicalContexts)
-			{
-				_useLogicalContexts = useLogicalContexts;
-			}
-
-			#endregion
-
-			public string PeekFromNestedContext()
-			{
-				// XXX: Due stack is not exposed, pop/push the last item added to do assertions on tests..
-				var str = NestedThreadVariablesContext.Pop();
-				NestedThreadVariablesContext.Push(str);
-
-				return str;
-			}
+			return str;
 		}
 
 		#endregion
 
 		#region SetUp & TearDown
 
-		[SetUp]
-		public void SetUp()
+		[OneTimeSetUp]
+		public void OneTimeSetUp()
 		{
-			_log = new DummyNLog(_useLogicalContexts);
+			NameValueCollection nameValueCollection = null;
+			LogManager.Adapter = new NLogLoggerFactoryAdapter(nameValueCollection);
+
+			NLogLogger.FavorLogicalVariableContexts = _useLogicalContexts;
+
+			_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 		}
 
-		[TearDown]
-		public void TearDown()
+
+		[OneTimeTearDown]
+		public void OneTimeTearDown()
 		{
+			// Default values..
+			NLogLogger.FavorLogicalVariableContexts = false;
+			LogManager.Reset();
+
 			_log = null;
 		}
 
@@ -122,7 +82,7 @@ namespace Common.Logging.Scopes
 				{
 					Assert.That(_log.ThreadVariablesContext.Get("A"), Is.EqualTo(1), "#0");
 					Assert.That(_log.ThreadVariablesContext.Get("B"), Is.EqualTo(1), "#1");
-					Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Z"), "#2");
+					Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Z"), "#2");
 				});
 
 				using (_log.BeginThreadScope("Y"))
@@ -134,7 +94,7 @@ namespace Common.Logging.Scopes
 					{
 						Assert.That(_log.ThreadVariablesContext.Get("A"), Is.EqualTo(2), "#3");
 						Assert.That(_log.ThreadVariablesContext.Get("B"), Is.EqualTo(2), "#4");
-						Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Y"), "#5");
+						Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Y"), "#5");
 					});
 				}
 
@@ -142,7 +102,7 @@ namespace Common.Logging.Scopes
 				{
 					Assert.That(_log.ThreadVariablesContext.Get("A"), Is.EqualTo(1), "#6");
 					Assert.That(_log.ThreadVariablesContext.Get("B"), Is.EqualTo(1), "#7");
-					Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Z"), "#8");
+					Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Z"), "#8");
 				});
 			}
 
@@ -167,7 +127,7 @@ namespace Common.Logging.Scopes
 				{
 					Assert.That(_log.ThreadVariablesContext.Get("A"), Is.EqualTo(1), "#0");
 					Assert.That(_log.ThreadVariablesContext.Get("B"), Is.EqualTo(1), "#1");
-					Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Z"), "#2");
+					Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Z"), "#2");
 				});
 
 				var threadId = Thread.CurrentThread.ManagedThreadId;
@@ -199,7 +159,7 @@ namespace Common.Logging.Scopes
 							Assert.Multiple(() =>
 							{
 								Assert.That(_log.ThreadVariablesContext.Get("C"), Is.EqualTo(1), "#7");
-								Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Y"), "#8");
+								Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Y"), "#8");
 							});
 						}
 
@@ -214,7 +174,7 @@ namespace Common.Logging.Scopes
 					Assert.That(_log.ThreadVariablesContext.Get("A"), Is.EqualTo(1), "#9");
 					Assert.That(_log.ThreadVariablesContext.Get("B"), Is.EqualTo(1), "#10");
 					Assert.That(_log.ThreadVariablesContext.Contains("C"), Is.False, "#11");
-					Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Z"), "#12");
+					Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Z"), "#12");
 				});
 			}
 		}
@@ -235,7 +195,7 @@ namespace Common.Logging.Scopes
 				{
 					Assert.That(_log.ThreadVariablesContext.Get("A"), Is.EqualTo(1), "#0");
 					Assert.That(_log.ThreadVariablesContext.Get("B"), Is.EqualTo(1), "#1");
-					Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Z"), "#2");
+					Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Z"), "#2");
 				});
 
 				using (var mre0 = new ManualResetEvent(false))
@@ -247,7 +207,7 @@ namespace Common.Logging.Scopes
 						{
 							Assert.That(_log.ThreadVariablesContext.Get("A"), Is.EqualTo(1), "#3");
 							Assert.That(_log.ThreadVariablesContext.Get("B"), Is.EqualTo(1), "#4");
-							Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Z"), "#5");
+							Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Z"), "#5");
 						});
 
 						_log.PushThreadScopedVariable("C", 1);
@@ -266,7 +226,7 @@ namespace Common.Logging.Scopes
 								Assert.That(_log.ThreadVariablesContext.Get("B"), Is.EqualTo(1), "#8");
 								Assert.That(_log.ThreadVariablesContext.Get("C"), Is.EqualTo(1), "#9");
 								Assert.That(_log.ThreadVariablesContext.Get("D"), Is.EqualTo(1), "#10");
-								Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Y"), "#11");
+								Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Y"), "#11");
 							});
 						}
 
@@ -274,7 +234,7 @@ namespace Common.Logging.Scopes
 						{
 							Assert.That(_log.ThreadVariablesContext.Get("A"), Is.EqualTo(1), "#12");
 							Assert.That(_log.ThreadVariablesContext.Contains("D"), Is.False, "#13");
-							Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Z"), "#14");
+							Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Z"), "#14");
 						});
 					});
 
@@ -305,7 +265,7 @@ namespace Common.Logging.Scopes
 						{
 							Assert.That(_log.ThreadVariablesContext.Get("A"), Is.EqualTo(2), "#19");
 							Assert.That(_log.ThreadVariablesContext.Get("B"), Is.EqualTo(2), "#20");
-							Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("X"), "#21");
+							Assert.That(PeekFromNestedContext(_log), Is.EqualTo("X"), "#21");
 						});
 					}
 
@@ -313,7 +273,7 @@ namespace Common.Logging.Scopes
 					{
 						Assert.That(_log.ThreadVariablesContext.Get("A"), Is.EqualTo(1), "#22");
 						Assert.That(_log.ThreadVariablesContext.Get("B"), Is.EqualTo(2), "#23");
-						Assert.That(_log.PeekFromNestedContext(), Is.EqualTo("Z"), "#24");
+						Assert.That(PeekFromNestedContext(_log), Is.EqualTo("Z"), "#24");
 					});
 				}
 			}

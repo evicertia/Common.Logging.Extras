@@ -70,11 +70,29 @@ namespace Common.Logging
 
 		public static IDisposable BeginThreadScope(this ILog @this, string description, IDictionary<string, object> variables = null, string prefix = null)
 		{
+			CustomStack<ThreadLoggingScope> customStack;
+
 			Guard.IsNotNull(@this, nameof(@this));
+
+			if (@this.ThreadVariablesContext is Simple.NoOpVariablesContext || @this.NestedThreadVariablesContext is Simple.NoOpNestedVariablesContext)
+			{
+				@this.Warn("BeginThreadScope called using an ILogger not supporting variable contexts, ignoring request.");
+				return null;
+			}
 
 			var context = @this.ThreadVariablesContext;
 
-			if (!(context.Get(STACK_KEY) is CustomStack<ThreadLoggingScope> customStack))
+			try
+			{
+				customStack = context.Get(STACK_KEY) as CustomStack<ThreadLoggingScope>;
+			}
+			catch (Exception ex) when (ex is NotSupportedException || ex is NotImplementedException)
+			{
+				@this.Warn("BeginThreadScope called using an ILogger not implementing variable contexts, ignoring request.");
+				return null;
+			}
+
+			if (customStack == null)
 			{
 				customStack = new CustomStack<ThreadLoggingScope>(Thread.CurrentThread.ManagedThreadId);
 				context.Set(STACK_KEY, customStack);
@@ -106,19 +124,34 @@ namespace Common.Logging
 
 		public static void PushThreadScopedVariable(this ILog @this, string name, object value)
 		{
-			Guard.IsNotNull(@this, nameof(@this));
-			@this.GetCurrentThreadScope().Set(name, value);
+			try
+			{
+				Guard.IsNotNull(@this, nameof(@this));
+				@this.GetCurrentThreadScope().Set(name, value);
+			}
+			catch (Exception ex) when (ex is NotSupportedException || ex is NotImplementedException)
+			{
+				@this.Warn("PushThreadScopedVariable called using an ILogger not implementing variable contexts, ignoring request.");
+			}
 		}
 
 		public static void PushThreadScopedVariablesFor(this ILog @this, IEnumerable<KeyValuePair<string, object>> variables, string prefix = null)
 		{
-			Guard.IsNotNull(@this, nameof(@this));
-			Guard.IsNotNull(variables, nameof(variables));
+			try
+			{
+				Guard.IsNotNull(@this, nameof(@this));
+				Guard.IsNotNull(variables, nameof(variables));
 
-			var scope = @this.GetCurrentThreadScope();
+				var scope = @this.GetCurrentThreadScope();
 
-			foreach (var item in variables)
-				scope.Set((prefix + item.Key), item.Value);
+				foreach (var item in variables)
+					scope.Set((prefix + item.Key), item.Value);
+
+			}
+			catch (Exception ex) when (ex is NotSupportedException || ex is NotImplementedException)
+			{
+				@this.Warn("PushThreadScopedVariablesFor called using an ILogger not implementing variable contexts, ignoring request.");
+			}
 		}
 
 		#endregion

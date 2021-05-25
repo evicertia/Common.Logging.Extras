@@ -2,8 +2,6 @@
 
 using NUnit.Framework;
 
-using Common.Logging.Simple;
-
 namespace Common.Logging.Scopes
 {
 	public class ScopeContractsTests
@@ -19,7 +17,7 @@ namespace Common.Logging.Scopes
 		[SetUp]
 		public void SetUp()
 		{
-			_log = new NoOpLogger();
+			_log = new DummyLog(useLogicalContexts: false);
 		}
 
 		[TearDown]
