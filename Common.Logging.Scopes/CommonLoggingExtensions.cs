@@ -64,6 +64,11 @@ namespace Common.Logging
 				.Peek();
 		}
 
+		private static bool IsNoOpVariablesContext(this ILog @this)
+		{
+			return @this.ThreadVariablesContext is Simple.NoOpVariablesContext || @this.NestedThreadVariablesContext is Simple.NoOpNestedVariablesContext;
+		}
+
 		#endregion
 
 		#region Public methods
@@ -74,7 +79,7 @@ namespace Common.Logging
 
 			Guard.IsNotNull(@this, nameof(@this));
 
-			if (@this.ThreadVariablesContext is Simple.NoOpVariablesContext || @this.NestedThreadVariablesContext is Simple.NoOpNestedVariablesContext)
+			if (@this.IsNoOpVariablesContext())
 			{
 				@this.Warn("BeginThreadScope called using an ILogger not supporting variable contexts, ignoring request.");
 				return null;
@@ -127,6 +132,14 @@ namespace Common.Logging
 			try
 			{
 				Guard.IsNotNull(@this, nameof(@this));
+				Guard.IsNotNullNorEmpty(name, nameof(name));
+
+				if (@this.IsNoOpVariablesContext())
+				{
+					@this.Warn("PushThreadScopedVariable called using an ILogger not supporting variable contexts, ignoring request.");
+					return;
+				}
+
 				@this.GetCurrentThreadScope().Set(name, value);
 			}
 			catch (Exception ex) when (ex is NotSupportedException || ex is NotImplementedException)
@@ -141,6 +154,12 @@ namespace Common.Logging
 			{
 				Guard.IsNotNull(@this, nameof(@this));
 				Guard.IsNotNull(variables, nameof(variables));
+
+				if (@this.IsNoOpVariablesContext())
+				{
+					@this.Warn("PushThreadScopedVariablesFor called using an ILogger not supporting variable contexts, ignoring request.");
+					return;
+				}
 
 				var scope = @this.GetCurrentThreadScope();
 
