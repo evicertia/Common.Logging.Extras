@@ -3,10 +3,10 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.Remoting.Messaging;
 
-namespace Common.Logging.Scopes
+namespace Common.Logging.NLog45
 {
 	// XXX: Originally taken from MappedDiagnosticsLogicalContext.cs (NLog).
-	internal static class DummyMappedDiagnosticsLogicalContext
+	public static class MappedDiagnosticsLogicalContext
 	{
 		#region Inner Types
 

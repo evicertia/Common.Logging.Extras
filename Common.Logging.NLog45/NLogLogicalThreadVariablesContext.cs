@@ -20,7 +20,7 @@
 
 // Originally taken from: https://github.com/net-commons/common-logging/pull/176
 
-using Context = NLog.MappedDiagnosticsLogicalContext;
+using Context = Common.Logging.NLog45.MappedDiagnosticsLogicalContext;
 
 namespace Common.Logging.NLog45
 {

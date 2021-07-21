@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Collections.Generic;
+using System.Runtime.Remoting.Messaging;
 
 using Common.Logging.Scopes;
 
@@ -18,7 +19,7 @@ namespace Common.Logging
 		//
 		// Additionally, we needed to wrap the stack as property instead of inherit this class with the data structure stack
 		//		due NLog, actually, not hits ToString() with collections of IEnumerable<>..
-		private sealed class CustomStack<T>
+		private sealed class CustomStack<T> : ILogicalThreadAffinative
 		{
 			#region Properties
 
