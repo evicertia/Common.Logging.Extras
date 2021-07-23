@@ -35,5 +35,22 @@ namespace Common.Logging.Scopes
 			Assert.That(() => _log.PushThreadScopedVariable("X", "Y"), Throws.Exception, "#0");
 			Assert.That(() => _log.PushThreadScopedVariablesFor(new Dictionary<string, object>() { { "X", "Y" } }), Throws.Exception, "#1");
 		}
+
+		[Test]
+		public void Get_Scope_Variables_Returns_Logging_Fields_Without_Modifying_The_Original_Dictionary()
+		{
+			using (_log.BeginThreadScope("..."))
+			{
+				_log.PushThreadScopedVariable("A", 1);
+
+				var scopeFields = _log.GetScopeVariables();
+
+				Assert.Multiple(() =>
+				{
+					Assert.That(scopeFields, Is.Not.Null.Or.Empty, "#1");
+					Assert.That(scopeFields.ContainsKey("A"), Is.True, "#2");
+				});
+			}
+		}
 	}
 }

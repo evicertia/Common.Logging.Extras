@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace Common.Logging.Scopes
 {
@@ -26,6 +27,8 @@ namespace Common.Logging.Scopes
 		#endregion
 
 		#region Public methods
+
+		public IReadOnlyDictionary<string, object> GetVariables() => new ReadOnlyDictionary<string, object>(_variables);
 
 		public void Set(string key, object value)
 		{

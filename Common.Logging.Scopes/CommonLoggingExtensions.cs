@@ -127,6 +127,19 @@ namespace Common.Logging
 			});
 		}
 
+		public static IReadOnlyDictionary<string, object> GetScopeVariables(this ILog @this)
+		{
+			Guard.IsNotNull(@this, nameof(@this));
+
+			if (@this.IsNoOpVariablesContext())
+			{
+				@this.Warn("GetScopeVariables called using an ILogger not supporting variable contexts, ignoring request.");
+				return null;
+			}
+
+			return @this.GetCurrentThreadScope().GetVariables();
+		}
+
 		public static void PushThreadScopedVariable(this ILog @this, string name, object value)
 		{
 			try
