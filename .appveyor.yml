@@ -21,7 +21,7 @@ deploy:
 - provider: NuGet
   name: production
   api_key:
-    secure: oSq2wUnB/S6wxOJR4Jp0cNZHl066eVK0X4RQI5jPDOjdgjb7HbTJA8gopIkqZWqY
+    secure: FwgmRWoZiYMr8Wj7YyFmMpbYl7wvLHYE3mFIZ4DS8cRyT5uPDRVjfRcvxGsB078U
   on:
     branch: master
 notifications:
