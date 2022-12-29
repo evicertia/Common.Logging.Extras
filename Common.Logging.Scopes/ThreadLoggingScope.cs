@@ -12,6 +12,7 @@ namespace Common.Logging.Scopes
 
 		private readonly IDictionary<string, object> _variables = new Dictionary<string, object>();
 		private readonly IVariablesContext _context;
+		private Action<ThreadLoggingScope> _disposer;
 
 		private bool _disposed;
 
@@ -21,9 +22,10 @@ namespace Common.Logging.Scopes
 
 		#region .ctors
 
-		public ThreadLoggingScope(IVariablesContext context)
+		public ThreadLoggingScope(IVariablesContext context, Action<ThreadLoggingScope> disposer)
 		{
 			_context = context.ThrowIfNull(nameof(context));
+			_disposer = disposer.ThrowIfNull(nameof(disposer));
 		}
 
 		#endregion
@@ -74,6 +76,8 @@ namespace Common.Logging.Scopes
 			if (_disposed)
 				return;
 
+			_disposer?.Invoke(this);
+
 			foreach (var item in _variables)
 			{
 				if (item.Value == _removeMarker)
@@ -86,6 +90,7 @@ namespace Common.Logging.Scopes
 
 			GC.SuppressFinalize(true);
 
+			_disposer = null;
 			_disposed = true;
 		}
 

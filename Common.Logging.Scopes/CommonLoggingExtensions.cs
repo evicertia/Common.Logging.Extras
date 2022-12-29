@@ -3,6 +3,7 @@ using System.Threading;
 using System.Collections.Generic;
 
 using Common.Logging.Scopes;
+using System.Collections;
 
 namespace Common.Logging
 {
@@ -103,9 +104,24 @@ namespace Common.Logging
 				context.Set(STACK_KEY, customStack);
 			}
 
-			@this.NestedThreadVariablesContext.Push(description);
+			var scope = new ThreadLoggingScope(context, x =>
+			{
+				if (customStack.Collection.Count <= 0)
+				{
+					@this.WarnFormat("Empty stack while disposing current ThreadLoggingScope?!");
+					return;
+				}
+				var scope2 = customStack.Collection.Pop();
 
-			var scope = new ThreadLoggingScope(context);
+				if (x != scope2)
+				{
+					@this.WarnFormat("Unbalanced stack while disposing current ThreadLoggingScope?!");
+					return;
+				}
+
+				if (@this.NestedThreadVariablesContext.HasItems)
+					@this.NestedThreadVariablesContext.Pop();
+			});
 
 			if (variables != null)
 			{
@@ -113,18 +129,10 @@ namespace Common.Logging
 					scope.Set((prefix + keyValue.Key), keyValue.Value);
 			}
 
+			@this.NestedThreadVariablesContext.Push(description);
 			customStack.Collection.Push(scope);
 
-			return Disposable.Using(@this, @this2 =>
-			{
-				// XXX: Disposable class ensures this code is only called once.
-				var stack2 = @this2.ThreadVariablesContext.Get(STACK_KEY) as CustomStack<ThreadLoggingScope>;
-
-				Guard.IsNotNull(stack2, nameof(CustomStack<ThreadLoggingScope>));
-
-				stack2.Collection.Pop().Dispose();
-				@this2.NestedThreadVariablesContext.Pop();
-			});
+			return scope;
 		}
 
 		public static IReadOnlyDictionary<string, object> GetScopeVariables(this ILog @this)
