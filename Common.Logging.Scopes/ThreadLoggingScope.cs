@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.Remoting.Messaging;
 
 namespace Common.Logging.Scopes
 {
@@ -36,11 +37,11 @@ namespace Common.Logging.Scopes
 
 		public void Set(string key, object value)
 		{
-			Guard.IsNotNullNorEmpty(key, nameof(key));
-			Guard.Against<InvalidOperationException>(_disposed, "{0} already disposed?!", nameof(ThreadLoggingScope));
-
 			try
 			{
+				Guard.IsNotNullNorEmpty(key, nameof(key));
+				Guard.Against<InvalidOperationException>(_disposed, "{0} already disposed?!", nameof(ThreadLoggingScope));
+
 				if (_variables.ContainsKey(key))
 				{
 					// Already saved a value for this variable..
@@ -76,17 +77,31 @@ namespace Common.Logging.Scopes
 			if (_disposed)
 				return;
 
-			_disposer?.Invoke(this);
-
-			foreach (var item in _variables)
+			try
 			{
-				if (item.Value == _removeMarker)
-					_context.Remove(item.Key);
-				else
-					_context.Set(item.Key, item.Value);
-			}
+				_disposer?.Invoke(this);
 
-			_variables.Clear(); //< Housekeeping..
+				foreach (var item in _variables)
+				{
+					if (item.Value == _removeMarker)
+						_context.Remove(item.Key);
+					else
+						_context.Set(item.Key, item.Value);
+				}
+
+				_variables.Clear(); //< Housekeeping..
+			}
+			catch (Exception ex)
+			{
+				var message =
+					$"{{0}} unexpected exception while disposing scoped. " +
+					$"This maybe related to issue https://github.com/evicertia/Common.Logging.Extras/issues/5, " +
+					$"which is an issue not easy to reproduce (and hence fix), but you can help us to fix this " +
+					$"issue faster by providing additional diagnostics details ;)";
+
+				if (SwallowExceptions) _log.WarnFormat(message, ex, "Ignoring");
+				else throw new InvalidOperationException(string.Format(message, "Caught"), ex);
+			}
 
 			GC.SuppressFinalize(true);
 

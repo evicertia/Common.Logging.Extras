@@ -12,13 +12,14 @@ namespace Common.Logging
 		#region Inner Types
 
 		// INFO: Custom Stack overriding ToString so we can persist it at
-		//		ThreadVariableContext w/o actual values being logged on.
+		//		 ThreadVariableContext w/o actual values being logged on.
 		//
 		// Also we allow saving current thread's id, so it can be
-		//		used as by guards later on as additional safe checks.
+		//		 used as by guards later on as additional safe checks.
 		//
-		// Additionally, we needed to wrap the stack as property instead of inherit this class with the data structure stack
-		//		due NLog, actually, not hits ToString() with collections of IEnumerable<>..
+		// Additionally, we needed to wrap the stack as property instead of
+		//		 inherit this class with the data structure stack due to NLog's
+		//		 not hitting ToString() on collections of IEnumerable<>..
 		private sealed class CustomStack<T>
 		{
 			#region Properties
@@ -33,7 +34,6 @@ namespace Common.Logging
 			public CustomStack(int ownerThreadId)
 			{
 				OwnerThreadId = ownerThreadId;
-
 				Collection = new Stack<T>();
 			}
 
@@ -167,6 +167,10 @@ namespace Common.Logging
 			{
 				@this.Warn("PushThreadScopedVariable called using an ILogger not implementing variable contexts, ignoring request.");
 			}
+			catch (Exception ex) when (ThreadLoggingScope.SwallowExceptions)
+			{
+				@this.Warn("Unexpected exception throw inside PushThreadScopedVariable?!", ex);
+			}
 		}
 
 		public static void PushThreadScopedVariablesFor(this ILog @this, IEnumerable<KeyValuePair<string, object>> variables, string prefix = null)
@@ -191,6 +195,10 @@ namespace Common.Logging
 			catch (Exception ex) when (ex is NotSupportedException || ex is NotImplementedException)
 			{
 				@this.Warn("PushThreadScopedVariablesFor called using an ILogger not implementing variable contexts, ignoring request.");
+			}
+			catch (Exception ex) when (ThreadLoggingScope.SwallowExceptions)
+			{
+				@this.Warn("Unexpected exception throw inside PushThreadScopedVariable?!", ex);
 			}
 		}
 
