@@ -12,6 +12,9 @@ dotnet_csproj:
   informational_version: '{version}'
 before_build:
   - nuget restore
+test_script:
+  - dotnet test .\Common.Logging.Scopes.Tests\Common.Logging.Scopes.Tests.csproj -c %configuration% --no-build
+  - dotnet test .\Common.Logging.NLog53.Tests\Common.Logging.NLog53.Tests.csproj -c %configuration% --no-build
 build:
   publish_nuget: true
   publish_nuget_symbols: true
