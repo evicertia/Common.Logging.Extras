@@ -1,5 +1,8 @@
 version: '{build}'
 skip_tags: true
+branches:
+  only:
+    - /.*/
 image: Visual Studio 2022
 configuration: Release
 dotnet_csproj:
